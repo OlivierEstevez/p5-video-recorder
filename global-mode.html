@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>P5js Video Recorder – Global Mode</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/p5@1.11.3/lib/p5.min.js"></script>
+  </head>
+  <body>
+    <script type="module" src="/lib/video-recorder.ts"></script>
+    <script>
+      const durationInSecs = 1;
+      const frameRate = 60;
+      const sketchWidth = 800;
+      const sketchHeight = 800;
+
+      let circles = [];
+      const numCircles = 1000;
+
+      function setup(){
+        // frameRate(60);
+        createCanvas(800, 800);
+        noStroke();
+
+        import('/lib/video-recorder.ts').then(module => {
+          videoRecorder = new module.default({
+              buffer: this,
+              framerate: frameRate,
+              width: sketchWidth,
+              height: sketchHeight
+          });
+        });
+        
+        for (let i = 0; i < numCircles; i++) {
+          circles.push({
+            x: random(sketchWidth),
+            y: random(sketchHeight),
+            color: color(random(255), random(255), random(255)),
+            xVelocity: random(-2, 2),
+            yVelocity: random(-2, 2),
+          });
+        }
+      }
+
+      function draw(){
+        const currentFrame = frameCount;
+
+        if(currentFrame === 30) {
+          videoRecorder.startRecording();
+        }
+
+        background(120);
+
+        // Draw and update each circle
+        for (let i = 0; i < numCircles; i++) {
+          fill(circles[i].color);
+          ellipse(circles[i].x, circles[i].y, 20, 20); // Draw circle
+
+          // Update position
+          circles[i].x += circles[i].xVelocity;
+          circles[i].y += circles[i].yVelocity;
+
+          // Bounce off the walls
+          if (circles[i].x < 0 || circles[i].x > sketchWidth) {
+            circles[i].xVelocity *= -1;
+          }
+          if (circles[i].y < 0 || circles[i].y > sketchHeight) {
+            circles[i].yVelocity *= -1;
+          }
+        }
+
+        // Capture the current frame as an image if capturing is enabled
+        if (videoRecorder.isRecording()) {
+          videoRecorder.captureFrame();
+        }
+
+        // Stop capturing after the duration has passed
+        if (videoRecorder.isRecording() && currentFrame >= durationInSecs * frameRate) {
+          noLoop();
+          videoRecorder.endRecording();
+        }
+        
+      }
+    </script>
+  </body>
+</html>
