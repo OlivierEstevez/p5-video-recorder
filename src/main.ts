@@ -1,80 +1,17 @@
 import '../style.css';
 import p5 from 'p5';
-import { FFmpeg } from '@ffmpeg/ffmpeg';
-
-const ffmpeg = new FFmpeg();
+import VideoRecorder from "../lib/video-recorder"
 
 const durationInSecs = 1;
 const frameRate = 60;
 const frameWidth = 800;
 const frameHeight = 800;
-let frames : Array<Uint8Array> = [];
-let rawFrames: { frame: HTMLCanvasElement; currentFrame: number; }[] = [];
-let capturing = false;
-
-const capturingDiv = document.createElement('div');
-capturingDiv.id = "capturingDiv";
-document.body.appendChild(capturingDiv);
-
-async function setupFFmpeg() {
-  if (!ffmpeg.loaded) {
-    await ffmpeg.load({
-      coreURL: "https://unpkg.com/@ffmpeg/core@0.12.6/dist/esm/ffmpeg-core.js",
-    });
-  }
-  ffmpeg.on('log', ({ message }) => console.log(message));
-  ffmpeg.on('progress', ({ progress, time }) => console.log(progress, time));
-}
-
-async function startCapture() {
-  capturingDiv.innerHTML = "Capturing..."
-  capturing = true;
-}
-
-async function finishCapture() {
-  capturing = false;
-  await setupFFmpeg();
-
-  capturingDiv.innerHTML = "Converting to PNGs..."
-
-  frames.forEach((frame, index) => {
-    console.log("Writing frame", index);
-    ffmpeg.writeFile(`frame_${index}.png`, frame);
-  });
-
-
-  capturingDiv.innerHTML = "Converting to video..."
-  const frameInputPattern = 'frame_%d.png';  // Image pattern for frames
-  await ffmpeg.exec([
-    '-framerate', String(frameRate),      // Set frame rate
-    '-i', frameInputPattern,              // Input pattern
-    // '-pix_fmt', 'yuv420p',                // Video pixel format
-    "-vcodec", "prores_ks", "-profile:v", "4444", "-pix_fmt", "yuva444p10le",
-    'output.mov',                         // Output file
-  ]);
-
-  const output = await ffmpeg.readFile('output.mov');
-
-  const blob = new Blob([output], { type: 'video/mp4' });
-  const url = URL.createObjectURL(blob);
-
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = 'output.mov';
-  a.click();
-
-  capturingDiv.innerHTML = "Done!"
-  capturingDiv.style.backgroundColor = "#00ff00"
-  capturingDiv.style.color = "#000000"
-
-  URL.revokeObjectURL(url);
-
-  frames.forEach((_, index) => ffmpeg.deleteFile(`frame_${index}.png`));
-}
 
 const sketch = (s: p5) => {
   let circles : {x: number; y: number; color: p5.Color; xVelocity: number; yVelocity: number; }[] = [];
   const numCircles = 1000;
+
+  const videoRecorder = new VideoRecorder(s);
 
   s.setup = () => {
     s.frameRate(frameRate);
@@ -97,7 +34,7 @@ const sketch = (s: p5) => {
     const currentFrame = s.frameCount;
 
     if(currentFrame === 30) {
-      startCapture();
+      videoRecorder.startRecording();
     }
 
     s.background(120);
@@ -121,39 +58,14 @@ const sketch = (s: p5) => {
     }
 
     // Capture the current frame as an image if capturing is enabled
-    if (capturing) {
-      const frame = (s.get(0, 0, frameWidth, frameHeight) as any).canvas;
-    
-      rawFrames.push({frame, currentFrame})
-      console.log("Captured frame", rawFrames.length);
-      
+    if (videoRecorder.isRecording()) {
+      videoRecorder.captureFrame();
     }
 
     // Stop capturing after the duration has passed
-    if (capturing && currentFrame >= durationInSecs * frameRate) {
-
+    if (videoRecorder.isRecording() && currentFrame >= durationInSecs * frameRate) {
       s.noLoop();
-      console.log("=== initializing conversion to Uint8Array");
-      capturingDiv.innerHTML = "Converting to Unit8..."
-
-      const framePromises = rawFrames.map((frame, i) => {
-        return new Promise<Uint8Array>((resolve) => {
-          frame.frame.toBlob(async (blob : Blob | null) => {
-            if(blob)
-              {const buffer = new Uint8Array(await blob.arrayBuffer());
-              resolve(buffer);
-              console.log("Converted frame to Uint8Array", i);
-            }
-          }, 'image/png');
-        });
-      });
-      
-      // Once all frames are converted to Uint8Array, store them in the frames array
-      Promise.all(framePromises).then((convertedFrames) => {
-        frames = convertedFrames;  // Now frames array is populated with all frame data
-        finishCapture();
-      });
-      
+      videoRecorder.endRecording();
     }
   };
 };

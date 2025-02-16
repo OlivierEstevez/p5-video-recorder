@@ -1,3 +1,9 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
 html {
   background-color: black;
   font-family: sans-serif;
@@ -18,4 +24,9 @@ canvas {
   background-color: #565656;
   padding: 8px 16px;
   border-radius: 99px;
+  display: none;
+}
+
+#capturingDiv.visible {
+ display: block;
 }
