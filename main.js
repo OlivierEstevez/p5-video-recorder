@@ -19,12 +19,14 @@ async function setupFFmpeg() {
     });
   }
   ffmpeg.on('log', ({ message }) => console.log(message));
+  ffmpeg.on('progress', ({ progress, time }) => console.log(progress, time));
 }
 
 async function startCapture() {
   capturing = true;
 
   const capturingDiv = document.createElement('div');
+  capturingDiv.id = "capturingDiv"
   capturingDiv.innerHTML = "Capturing..."
   capturingDiv.style.position = "absolute"
   capturingDiv.style.left = "0px"
@@ -39,17 +41,15 @@ async function finishCapture() {
   capturing = false;
   await setupFFmpeg();
 
-  console.log("=== Converting frames to video...");
+  document.getElementById("capturingDiv").innerHTML = "Converting to PNGs..."
 
   frames.forEach((frame, index) => {
     console.log("Writing frame", index);
     ffmpeg.writeFile(`frame_${index}.png`, frame);
   });
 
-  console.log(await ffmpeg.listDir("/"));
-  
-  console.log("=== Writing frames done");
 
+  document.getElementById("capturingDiv").innerHTML = "Converting to video..."
   const frameInputPattern = 'frame_%d.png';  // Image pattern for frames
   await ffmpeg.exec([
     '-framerate', String(frameRate),      // Set frame rate
@@ -69,6 +69,10 @@ async function finishCapture() {
   a.download = 'output.mov';
   a.click();
 
+  capturingDiv.innerHTML = "Done!"
+  capturingDiv.style.backgroundColor = "#00ff00"
+  capturingDiv.style.color = "#000000"
+
   URL.revokeObjectURL(url);
 
   frames.forEach((_, index) => ffmpeg.deleteFile(`frame_${index}.png`));
@@ -79,7 +83,6 @@ const sketch = (s) => {
     s.frameRate(frameRate);
     s.createCanvas(frameWidth, frameHeight);
     s.noStroke();
-    startCapture();  // Start capturing frames
   };
 
   s.draw = () => {
@@ -93,12 +96,14 @@ const sketch = (s) => {
     s.textSize(24);
     s.text(currentFrame, 500, 240);
 
+
+    if(currentFrame === 30) {
+      startCapture();
+    }
+
     // Capture the current frame as an image if capturing is enabled
     if (capturing) {
       const frame = s.get(0, 0, frameWidth, frameHeight).canvas;
-      // frame.toBlob(async (blob) => {
-      //   frames.push(new Uint8Array(await blob.arrayBuffer()));
-      // }, 'image/png');
       rawFrames.push({frame, currentFrame})
       console.log("Captured frame", rawFrames.length);
       
@@ -109,6 +114,7 @@ const sketch = (s) => {
 
       s.noLoop();
       console.log("=== initializing conversion to Uint8Array");
+      document.getElementById("capturingDiv").innerHTML = "Converting to Unit8..."
 
       const framePromises = rawFrames.map((frame, i) => {
         return new Promise((resolve) => {
