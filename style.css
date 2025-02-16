@@ -9,3 +9,13 @@ canvas {
   top: 50%;
   transform: translate(-50%, -50%);
 }
+
+#capturingDiv {
+  position: absolute;
+  top: 0;
+  left: 0;
+  color: white;
+  background-color: #565656;
+  padding: 8px 16px;
+  border-radius: 99px;
+}

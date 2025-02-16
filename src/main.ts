@@ -1,16 +1,20 @@
-import './style.css';
+import '../style.css';
 import p5 from 'p5';
 import { FFmpeg } from '@ffmpeg/ffmpeg';
 
 const ffmpeg = new FFmpeg();
 
-const durationInSecs = 5;
+const durationInSecs = 1;
 const frameRate = 60;
 const frameWidth = 800;
 const frameHeight = 800;
-let frames = [];
-let rawFrames = [];
+let frames : Array<Uint8Array> = [];
+let rawFrames: { frame: HTMLCanvasElement; currentFrame: number; }[] = [];
 let capturing = false;
+
+const capturingDiv = document.createElement('div');
+capturingDiv.id = "capturingDiv";
+document.body.appendChild(capturingDiv);
 
 async function setupFFmpeg() {
   if (!ffmpeg.loaded) {
@@ -23,25 +27,15 @@ async function setupFFmpeg() {
 }
 
 async function startCapture() {
-  capturing = true;
-
-  const capturingDiv = document.createElement('div');
-  capturingDiv.id = "capturingDiv"
   capturingDiv.innerHTML = "Capturing..."
-  capturingDiv.style.position = "absolute"
-  capturingDiv.style.left = "0px"
-  capturingDiv.style.color = "white"
-  capturingDiv.style.backgroundColor = "#565656"
-  capturingDiv.style.padding = "8px 16px"
-  capturingDiv.style.borderRadius = "999px"
-  document.body.appendChild(capturingDiv)
+  capturing = true;
 }
 
 async function finishCapture() {
   capturing = false;
   await setupFFmpeg();
 
-  document.getElementById("capturingDiv").innerHTML = "Converting to PNGs..."
+  capturingDiv.innerHTML = "Converting to PNGs..."
 
   frames.forEach((frame, index) => {
     console.log("Writing frame", index);
@@ -49,7 +43,7 @@ async function finishCapture() {
   });
 
 
-  document.getElementById("capturingDiv").innerHTML = "Converting to video..."
+  capturingDiv.innerHTML = "Converting to video..."
   const frameInputPattern = 'frame_%d.png';  // Image pattern for frames
   await ffmpeg.exec([
     '-framerate', String(frameRate),      // Set frame rate
@@ -61,7 +55,7 @@ async function finishCapture() {
 
   const output = await ffmpeg.readFile('output.mov');
 
-  const blob = new Blob([output.buffer], { type: 'video/mp4' });
+  const blob = new Blob([output], { type: 'video/mp4' });
   const url = URL.createObjectURL(blob);
 
   const a = document.createElement('a');
@@ -78,8 +72,8 @@ async function finishCapture() {
   frames.forEach((_, index) => ffmpeg.deleteFile(`frame_${index}.png`));
 }
 
-const sketch = (s) => {
-  let circles = [];
+const sketch = (s: p5) => {
+  let circles : {x: number; y: number; color: p5.Color; xVelocity: number; yVelocity: number; }[] = [];
   const numCircles = 1000;
 
   s.setup = () => {
@@ -128,7 +122,8 @@ const sketch = (s) => {
 
     // Capture the current frame as an image if capturing is enabled
     if (capturing) {
-      const frame = s.get(0, 0, frameWidth, frameHeight).canvas;
+      const frame = (s.get(0, 0, frameWidth, frameHeight) as any).canvas;
+    
       rawFrames.push({frame, currentFrame})
       console.log("Captured frame", rawFrames.length);
       
@@ -139,15 +134,16 @@ const sketch = (s) => {
 
       s.noLoop();
       console.log("=== initializing conversion to Uint8Array");
-      document.getElementById("capturingDiv").innerHTML = "Converting to Unit8..."
+      capturingDiv.innerHTML = "Converting to Unit8..."
 
       const framePromises = rawFrames.map((frame, i) => {
-        return new Promise((resolve) => {
-          frame.frame.toBlob(async (blob) => {
-            const buffer = new Uint8Array(await blob.arrayBuffer());
-            resolve(buffer);
-            console.log("Converted frame to Uint8Array", i);
-            
+        return new Promise<Uint8Array>((resolve) => {
+          frame.frame.toBlob(async (blob : Blob | null) => {
+            if(blob)
+              {const buffer = new Uint8Array(await blob.arrayBuffer());
+              resolve(buffer);
+              console.log("Converted frame to Uint8Array", i);
+            }
           }, 'image/png');
         });
       });
