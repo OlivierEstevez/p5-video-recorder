@@ -11,7 +11,7 @@ const sketch = (s: p5) => {
   let circles : {x: number; y: number; color: p5.Color; xVelocity: number; yVelocity: number; }[] = [];
   const numCircles = 1000;
 
-  const videoRecorder = new VideoRecorder(s, frameRate, sketchWidth, sketchHeight);
+  const videoRecorder = new VideoRecorder({ buffer: s, framerate: frameRate, width: sketchWidth, height: sketchHeight });
 
   s.setup = () => {
     s.frameRate(frameRate);

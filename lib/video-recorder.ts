@@ -1,34 +1,47 @@
 import p5 from 'p5';
 import { FFmpeg } from '@ffmpeg/ffmpeg';
 
+interface VideoRecorderOptions {
+  buffer?: p5;
+  framerate?: number;
+  width?: number;
+  height?: number;
+}
+
 export default class VideoRecorder {
   private ffmpeg = new FFmpeg();
 
   private s : p5 | null = null;
 
-  private framerate: number;
+  private framerate: number | undefined;
   private width: number | undefined;
   private height: number | undefined;
   private recording: boolean = false;
+  private initialized: boolean = false;
   private capturingDiv: HTMLDivElement = document.createElement('div');
   private rawFrames: { frame: HTMLCanvasElement; currentFrame: number; }[] = [];
   private frames : Array<Uint8Array> = [];
 
-  constructor(s?: p5, framerate?: number, width?: number, height?: number) {
-    this.s = s || (window as any).p5;
-    
-    if (framerate === undefined) {
-      console.warn("VideoRecorder:", "Framerate not defined. Defaulting to 60 FPS.");
-      this.framerate = 60;
-    } else {
-      this.framerate = framerate;
-    }
+  constructor(options?: VideoRecorderOptions) {
+    this.s = options?.buffer || (window as any).p5;
 
-    this.width = width || undefined;
-    this.height = width || undefined;
-    
-    this.capturingDiv.id = "capturingDiv";
-    document.body.appendChild(this.capturingDiv);  
+    if(this.s === undefined) {
+      console.error("p5 instance is null. Cannot initialize.");
+    } else {
+      this.initialized = true;
+      if (options?.framerate === undefined) {
+        console.warn("VideoRecorder:", "Framerate not defined. Defaulting to 60 FPS.");
+        this.framerate = 60;
+      } else {
+        this.framerate = options.framerate;
+      }
+  
+      this.width = options?.width || undefined;
+      this.height = options?.width || undefined;
+      
+      this.capturingDiv.id = "capturingDiv";
+      document.body.appendChild(this.capturingDiv);  
+    }
   }
 
   async setupFFmpeg() {
@@ -42,14 +55,16 @@ export default class VideoRecorder {
   }
 
   startRecording() {
-    if (this.s) {
-      console.log("Recording");
-      this.capturingDiv.classList.toggle('visible');
-      this.capturingDiv.innerHTML = "Capturing..."
+    if(this.initialized){
+      if (this.s) {
+        console.log("Recording");
+        this.capturingDiv.classList.toggle('visible');
+        this.capturingDiv.innerHTML = "Capturing..."
 
-      this.recording = true;
-    } else {
-      console.error("p5 instance is null. Cannot initialize.");
+        this.recording = true;
+      } else {
+        console.error("p5 instance is null. Cannot initialize.");
+      }
     }
   }
 
