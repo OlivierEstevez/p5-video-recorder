@@ -4,7 +4,7 @@ import { FFmpeg } from '@ffmpeg/ffmpeg';
 
 const ffmpeg = new FFmpeg();
 
-const durationInSecs = 1;
+const durationInSecs = 5;
 const frameRate = 60;
 const frameWidth = 800;
 const frameHeight = 800;
@@ -79,26 +79,51 @@ async function finishCapture() {
 }
 
 const sketch = (s) => {
+  let circles = [];
+  const numCircles = 1000;
+
   s.setup = () => {
     s.frameRate(frameRate);
     s.createCanvas(frameWidth, frameHeight);
     s.noStroke();
+
+    // Initialize circles with random positions, colors, and velocities
+    for (let i = 0; i < numCircles; i++) {
+      circles.push({
+        x: s.random(frameWidth),
+        y: s.random(frameHeight),
+        color: s.color(s.random(255), s.random(255), s.random(255)),
+        xVelocity: s.random(-2, 2),
+        yVelocity: s.random(-2, 2),
+      });
+    }
   };
 
   s.draw = () => {
     const currentFrame = s.frameCount;
 
-    s.background(120);
-    s.fill(255, 0, 0);
-    s.rect(currentFrame % s.width, 0, 150, 250);
-
-    s.fill(0);
-    s.textSize(24);
-    s.text(currentFrame, 500, 240);
-
-
     if(currentFrame === 30) {
       startCapture();
+    }
+
+    s.background(120);
+    
+    // Draw and update each circle
+    for (let i = 0; i < numCircles; i++) {
+      s.fill(circles[i].color);
+      s.ellipse(circles[i].x, circles[i].y, 20, 20); // Draw circle
+
+      // Update position
+      circles[i].x += circles[i].xVelocity;
+      circles[i].y += circles[i].yVelocity;
+
+      // Bounce off the walls
+      if (circles[i].x < 0 || circles[i].x > frameWidth) {
+        circles[i].xVelocity *= -1;
+      }
+      if (circles[i].y < 0 || circles[i].y > frameHeight) {
+        circles[i].yVelocity *= -1;
+      }
     }
 
     // Capture the current frame as an image if capturing is enabled
