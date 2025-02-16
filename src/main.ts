@@ -4,25 +4,25 @@ import VideoRecorder from "../lib/video-recorder"
 
 const durationInSecs = 1;
 const frameRate = 60;
-const frameWidth = 800;
-const frameHeight = 800;
+const sketchWidth = 800;
+const sketchHeight = 800;
 
 const sketch = (s: p5) => {
   let circles : {x: number; y: number; color: p5.Color; xVelocity: number; yVelocity: number; }[] = [];
   const numCircles = 1000;
 
-  const videoRecorder = new VideoRecorder(s);
+  const videoRecorder = new VideoRecorder(s, frameRate, sketchWidth, sketchHeight);
 
   s.setup = () => {
     s.frameRate(frameRate);
-    s.createCanvas(frameWidth, frameHeight);
+    s.createCanvas(sketchWidth, sketchHeight);
     s.noStroke();
 
     // Initialize circles with random positions, colors, and velocities
     for (let i = 0; i < numCircles; i++) {
       circles.push({
-        x: s.random(frameWidth),
-        y: s.random(frameHeight),
+        x: s.random(sketchWidth),
+        y: s.random(sketchHeight),
         color: s.color(s.random(255), s.random(255), s.random(255)),
         xVelocity: s.random(-2, 2),
         yVelocity: s.random(-2, 2),
@@ -49,10 +49,10 @@ const sketch = (s: p5) => {
       circles[i].y += circles[i].yVelocity;
 
       // Bounce off the walls
-      if (circles[i].x < 0 || circles[i].x > frameWidth) {
+      if (circles[i].x < 0 || circles[i].x > sketchWidth) {
         circles[i].xVelocity *= -1;
       }
-      if (circles[i].y < 0 || circles[i].y > frameHeight) {
+      if (circles[i].y < 0 || circles[i].y > sketchHeight) {
         circles[i].yVelocity *= -1;
       }
     }

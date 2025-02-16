@@ -7,12 +7,14 @@ export default class VideoRecorder {
   private s : p5 | null = null;
 
   private framerate: number;
+  private width: number | undefined;
+  private height: number | undefined;
   private recording: boolean = false;
   private capturingDiv: HTMLDivElement = document.createElement('div');
   private rawFrames: { frame: HTMLCanvasElement; currentFrame: number; }[] = [];
   private frames : Array<Uint8Array> = [];
 
-  constructor(s?: p5, framerate?: number) {
+  constructor(s?: p5, framerate?: number, width?: number, height?: number) {
     this.s = s || (window as any).p5;
     
     if (framerate === undefined) {
@@ -21,6 +23,9 @@ export default class VideoRecorder {
     } else {
       this.framerate = framerate;
     }
+
+    this.width = width || undefined;
+    this.height = width || undefined;
     
     this.capturingDiv.id = "capturingDiv";
     document.body.appendChild(this.capturingDiv);  
@@ -50,7 +55,7 @@ export default class VideoRecorder {
 
   captureFrame() {
     if (this.s) {
-      const frame = (this.s.get(0, 0, this.s.width, this.s.height) as any).canvas;
+      const frame = (this.s.get(0, 0, this.width || this.s.width, this.height || this.s.height) as any).canvas;
       this.rawFrames.push({frame, currentFrame: this.s.frameCount});
   
       console.log("Captured frame", this.rawFrames.length);
