@@ -135,7 +135,7 @@ const sketch = (s) => {
     }
 
     // Stop capturing after the duration has passed
-    if (currentFrame >= durationInSecs * frameRate) {
+    if (capturing && currentFrame >= durationInSecs * frameRate) {
 
       s.noLoop();
       console.log("=== initializing conversion to Uint8Array");
