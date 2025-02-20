@@ -2,7 +2,7 @@ import p5 from 'p5';
 import VideoRecorder from "../lib/video-recorder"
 
 const durationInSecs = 1;
-const frameRate = 60;
+const framerate = 60;
 const sketchWidth = 800;
 const sketchHeight = 800;
 
@@ -10,10 +10,10 @@ const sketch = (s: p5) => {
   let circles : {x: number; y: number; color: p5.Color; xVelocity: number; yVelocity: number; }[] = [];
   const numCircles = 1000;
 
-  const videoRecorder = new VideoRecorder({ buffer: s, framerate: frameRate, width: sketchWidth, height: sketchHeight });
+  const videoRecorder = new VideoRecorder({ buffer: s, framerate: framerate, width: sketchWidth, height: sketchHeight });
 
   s.setup = () => {
-    s.frameRate(frameRate);
+    s.frameRate(framerate);
     s.createCanvas(sketchWidth, sketchHeight);
     s.noStroke();
 
@@ -62,7 +62,7 @@ const sketch = (s: p5) => {
     }
 
     // Stop capturing after the duration has passed
-    if (videoRecorder.isRecording() && currentFrame >= durationInSecs * frameRate) {
+    if (videoRecorder.isRecording() && currentFrame >= durationInSecs * framerate) {
       s.noLoop();
       videoRecorder.endRecording();
     }
